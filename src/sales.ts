@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   pgSchema,
   bigint,
@@ -5,8 +6,10 @@ import {
   timestamp,
   numeric,
   integer,
+  smallint,
   boolean,
   date,
+  inet,
   index,
 } from "drizzle-orm/pg-core";
 
@@ -34,12 +37,56 @@ export const ordersDetail = sales.table(
     isRenewal: boolean("is_renewal").notNull().default(false),
     hasDuo: boolean("has_duo").notNull().default(false),
     authnetCategory: text("authnet_category").notNull(),
+    // --- Phase 2.5 columns (added 2026-05-08) ---
+    // Device + UA + IP, parsed/copied from `_customer_user_agent` and
+    // `_customer_ip_address` postmeta.
+    deviceClass: text("device_class"), // 'Mobile' | 'Tablet' | 'Desktop' | 'Bot' | 'Unknown'
+    userAgent: text("user_agent"),
+    ipAddress: inet("ip_address"),
+    // Billing address from WC `_billing_*` postmeta.
+    billingCountry: text("billing_country"), // ISO-2 (US, CA, GB, ...)
+    billingState: text("billing_state"),
+    billingCity: text("billing_city"),
+    billingPostcode: text("billing_postcode"),
+    // First-touch attribution: parsed from `_monsterinsights_temporary_user_journey`
+    // (PHP-serialized array of {timestamp -> "url|#|title|#|id"}). Take the
+    // entry with the lowest timestamp; raw URL goes in referrer, derived
+    // host (or 'direct' if internal) goes in source.
+    firstTouchReferrer: text("first_touch_referrer"),
+    firstTouchSource: text("first_touch_source"),
+    // Most-significant coupon used on the order (highest discount_amount
+    // when multiple are applied). Pulled from
+    // wp_woocommerce_order_items + wp_woocommerce_order_itemmeta.
+    couponCode: text("coupon_code"),
+    // Authorize.net CIM card metadata. Brand from
+    // `_wc_authorize_net_cim_credit_card_card_type`. Expiry parsed from
+    // `_wc_authorize_net_cim_credit_card_card_expiry_date` which stores
+    // 'YY-MM' (e.g. '29-02' = Feb 2029).
+    cardBrand: text("card_brand"),
+    cardExpMonth: smallint("card_exp_month"),
+    cardExpYear: smallint("card_exp_year"),
     syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     byDate: index("orders_detail_by_date").on(t.orderDate),
     byCategory: index("orders_detail_by_category").on(t.authnetCategory),
     byDateCategory: index("orders_detail_by_date_category").on(t.orderDate, t.authnetCategory),
+    // Phase 2.5 — partial indexes (skip the pre-backfill NULL rows).
+    byBillingState: index("idx_orders_state")
+      .on(t.billingState)
+      .where(sql`${t.billingState} IS NOT NULL`),
+    byBillingCountry: index("idx_orders_country")
+      .on(t.billingCountry)
+      .where(sql`${t.billingCountry} IS NOT NULL`),
+    byFirstTouchSource: index("idx_orders_first_source")
+      .on(t.firstTouchSource)
+      .where(sql`${t.firstTouchSource} IS NOT NULL`),
+    byCoupon: index("idx_orders_coupon")
+      .on(t.couponCode)
+      .where(sql`${t.couponCode} IS NOT NULL`),
+    byCardExpiry: index("idx_orders_card_expiry")
+      .on(t.cardExpYear, t.cardExpMonth)
+      .where(sql`${t.cardExpYear} IS NOT NULL`),
   }),
 );
 
