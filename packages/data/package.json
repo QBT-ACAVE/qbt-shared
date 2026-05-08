@@ -1,0 +1,35 @@
+{
+  "name": "@qbt/data",
+  "version": "0.1.0",
+  "description": "Canonical Drizzle schema for the QBT sales Postgres schema in Neon.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./sales": {
+      "types": "./dist/sales.d.ts",
+      "import": "./dist/sales.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "prepare": "tsc"
+  },
+  "peerDependencies": {
+    "drizzle-orm": ">=0.40"
+  },
+  "devDependencies": {
+    "drizzle-orm": "^0.45.2",
+    "typescript": "^5.9.3"
+  }
+}
