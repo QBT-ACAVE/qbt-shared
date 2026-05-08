@@ -48,12 +48,12 @@ export const ordersDetail = sales.table(
     billingState: text("billing_state"),
     billingCity: text("billing_city"),
     billingPostcode: text("billing_postcode"),
-    // First-touch attribution: parsed from `_monsterinsights_temporary_user_journey`
-    // (PHP-serialized array of {timestamp -> "url|#|title|#|id"}). Take the
-    // entry with the lowest timestamp; raw URL goes in referrer, derived
-    // host (or 'direct' if internal) goes in source.
-    firstTouchReferrer: text("first_touch_referrer"),
-    firstTouchSource: text("first_touch_source"),
+    // GA client_id from `_yoast_gau_uuid` postmeta. The join key into GA4 —
+    // when GA4 ingestion lands in Neon, source/medium/campaign get pulled
+    // via JOIN on this column. MonsterInsights' own attribution data is
+    // sparse (~6% coverage) and this is what populates everywhere MI does
+    // plus more, so we skip the MI parsing entirely.
+    gaClientId: text("ga_client_id"),
     // Most-significant coupon used on the order (highest discount_amount
     // when multiple are applied). Pulled from
     // wp_woocommerce_order_items + wp_woocommerce_order_itemmeta.
@@ -78,9 +78,9 @@ export const ordersDetail = sales.table(
     byBillingCountry: index("idx_orders_country")
       .on(t.billingCountry)
       .where(sql`${t.billingCountry} IS NOT NULL`),
-    byFirstTouchSource: index("idx_orders_first_source")
-      .on(t.firstTouchSource)
-      .where(sql`${t.firstTouchSource} IS NOT NULL`),
+    byGaClientId: index("idx_orders_ga_client")
+      .on(t.gaClientId)
+      .where(sql`${t.gaClientId} IS NOT NULL`),
     byCoupon: index("idx_orders_coupon")
       .on(t.couponCode)
       .where(sql`${t.couponCode} IS NOT NULL`),
