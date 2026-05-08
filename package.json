@@ -3,17 +3,16 @@
   "version": "0.1.0",
   "description": "Canonical Drizzle schema for the QBT sales Postgres schema in Neon.",
   "private": true,
-  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "default": "./dist/index.js"
     },
     "./sales": {
       "types": "./dist/sales.d.ts",
-      "import": "./dist/sales.js"
+      "default": "./dist/sales.js"
     }
   },
   "files": [
